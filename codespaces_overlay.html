@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Mobile Codespaces Overlay</title>
+<style>
+/* overlay 全体 */
+#overlay {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  z-index: 9999;
+  user-select: none;
+}
+/* ボタン共通 */
+.key {
+  width: 60px;
+  height: 60px;
+  margin: 5px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  display: inline-flex;
+  justify-content:center;
+  align-items:center;
+  border-radius:10px;
+  font-size:24px;
+  touch-action: none;
+}
+.space { width: 180px; }
+</style>
+</head>
+<body>
+
+<!-- noVNC iframe -->
+<iframe id="vncframe" src="https://fictional-halibut-5vxwvpqxp9v37944-6080.app.github.dev/" 
+        style="width:100%; height:100%; border:none;"></iframe>
+
+<!-- overlay -->
+<div id="overlay">
+  <div class="key" data-key="w">W</div><br>
+  <div class="key" data-key="a">A</div>
+  <div class="key" data-key="s">S</div>
+  <div class="key" data-key="d">D</div><br>
+  <div class="key space" data-key=" ">SPACE</div>
+</div>
+
+<script>
+(function(){
+  const iframe = document.getElementById("vncframe");
+  const overlay = document.getElementById("overlay");
+
+  // WASD / Space ボタン
+  overlay.querySelectorAll(".key").forEach(btn=>{
+    btn.addEventListener("touchstart", e=>{
+      e.preventDefault();
+      const key = btn.dataset.key;
+      iframe.contentWindow.postMessage({type:"keydown", key}, "*");
+    });
+    btn.addEventListener("touchend", e=>{
+      e.preventDefault();
+      const key = btn.dataset.key;
+      iframe.contentWindow.postMessage({type:"keyup", key}, "*");
+    });
+  });
+
+  // ドラッグ補助
+  let lastTouch = null;
+  iframe.addEventListener("touchmove", e=>{
+    if(e.touches.length===1 && lastTouch){
+      e.preventDefault();
+      const touch = e.touches[0];
+      const dx = touch.clientX - lastTouch.clientX;
+      const dy = touch.clientY - lastTouch.clientY;
+      iframe.contentWindow.postMessage({type:"mousemove", dx, dy}, "*");
+      lastTouch = touch;
+    } else if(e.touches.length===1){
+      lastTouch = e.touches[0];
+    }
+  });
+  iframe.addEventListener("touchend", ()=> lastTouch=null);
+
+})();
+</script>
+
+</body>
+</html>
